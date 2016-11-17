@@ -31,10 +31,12 @@ function run() {
         Authorization: 'Bearer ' + service.getAccessToken()
       }
     }),
-        results = JSON.parse(response.getContentText());
+        results = JSON.parse(response.getContentText()),
+        keep = [];
     for (var x in results) {
-      downloadGist(results[x]);
+      keep.push(downloadGist(results[x]));
     }
+    removeDeprecatedGists(keep);
   } else {
     var authorizationUrl = service.getAuthorizationUrl();
     Logger.log('NO GITHUB ACCESS, open URL: ' + authorizationUrl);
@@ -81,8 +83,10 @@ function authCallback(request) {
  * Downloads the whole gist (all files).
  */
 function downloadGist(arr) {
-  var prop = PropertiesService.getScriptProperties();
-  if (prop.getProperty('gist-'+arr.id) !== arr.updated_at) {
+  var prop = PropertiesService.getScriptProperties(),
+      propVal = prop.getProperty('gist-'+arr.id),
+      gistData = propVal && propVal[0] == '{' ? JSON.parse(propVal) : 0;
+  if (!gistData || gistData.updated_at !== arr.updated_at) {
     // (re)download
     // create folder
     // folderName: yyyy-mm-dd - filename.ext - id
@@ -99,7 +103,13 @@ function downloadGist(arr) {
     }
     
     Logger.log('Downloaded/Updated Gist: ' + folderName);
-    prop.setProperty('gist-'+arr.id, arr.updated_at);
+    prop.setProperty('gist-'+arr.id, JSON.stringify({
+      'updated_at': arr.updated_at,
+      'folder_name': folderName
+    }));
+    return folderName;
+  } else {
+    return gistData.folder_name;
   }
 }
 
@@ -109,6 +119,22 @@ function downloadGist(arr) {
 function downloadFile(file, folder) {
   var src = UrlFetchApp.fetch(file.raw_url);
   folder.createFile(file.filename, src);
+}
+
+/**
+ * Removes all gists that are not in the 'keep' array.
+ */
+function removeDeprecatedGists(keep) {
+  var rootFolder = getFolder(rootFolderPath),
+      rootFolderIterator = rootFolder.getFolders();
+  while (rootFolderIterator.hasNext()) {
+    var folder = rootFolderIterator.next();
+    if (keep.indexOf(folder.getName()) == -1) {
+      // delete
+      folder.setTrashed(true);
+      Logger.log(folder.getName()+' is deprecated');
+    }
+  }
 }
 
 /**

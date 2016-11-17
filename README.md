@@ -34,6 +34,8 @@ If you run your script again the script just updates the previously downloaded
 gists if they have changed. This way the script does take much less time and if
 you get a timeout error you can just run the script again to continue.
 
+New: Removes old (removed or renamed) gist folders.
+
 ## Add triggers (cron jobs)
 
 Click on `Resources` > `Current project's triggers` to add the `run`
