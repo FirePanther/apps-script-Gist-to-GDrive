@@ -119,7 +119,7 @@ function downloadGist(arr) {
 function downloadFile(file, folder) {
   try {
     var src = UrlFetchApp.fetch(file.raw_url),
-        fileIterator = folder.getFiles(file.filename);
+        fileIterator = folder.getFilesByName(file.filename);
     // "override" file(s)
     while (fileIterator.hasNext()) {
       fileIterator.next().setTrashed(true);
