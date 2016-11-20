@@ -99,7 +99,7 @@ function downloadGist(arr) {
     // download files into folder
     var files = arr.files;
     for (var x in files) {
-      downloadFile(files[x], folder);
+      if (!downloadFile(files[x], folder)) return ''; // skip for now
     }
     
     Logger.log('Downloaded/Updated Gist: ' + folderName);
@@ -117,8 +117,18 @@ function downloadGist(arr) {
  * Downloads the gist file into the folder.
  */
 function downloadFile(file, folder) {
-  var src = UrlFetchApp.fetch(file.raw_url);
-  folder.createFile(file.filename, src);
+  try {
+    var src = UrlFetchApp.fetch(file.raw_url),
+        fileIterator = folder.getFiles(file.filename);
+    // "override" file(s)
+    while (fileIterator.hasNext()) {
+      fileIterator.next().setTrashed(true);
+    }
+    folder.createFile(file.filename, src);
+    return true;
+  } catch(e) {
+    return false;
+  }
 }
 
 /**
