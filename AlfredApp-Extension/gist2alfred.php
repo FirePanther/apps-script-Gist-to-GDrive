@@ -18,13 +18,25 @@ $gistSnippets = $gdriveRoot.'/Configs/AlfredApp/Alfred.alfredpreferences/snippet
 
 // scan the gists folder for gists
 $gists = glob($gistBackups.'/*');
+$keep = [];
 foreach ($gists as $gistFolder) {
-	parseGistFolder($gistFolder);
+	$keep[] = parseGistFolder($gistFolder);
+}
+
+// remove old gist snippets from alfred
+$snippets = glob($gistSnippets.'/*.json');
+foreach ($snippets as $snippet) {
+	if (preg_match('~ \[([a-f0-9]+)\]\.json$~', $snippet, $m)) {
+		if (!in_array($m[1], $keep)) {
+			unlink($snippet);
+		}
+	}
 }
 
 /**
  * parse the given gist folder and update the snippet version if the folder
  * matches a pattern
+ * @return gistId
  */
 function parseGistFolder($gistFolder) {
 	$gistFolderName = preg_replace('~^.*\/([^\/]+)$~', '$1', $gistFolder);
@@ -33,6 +45,7 @@ function parseGistFolder($gistFolder) {
 			$mtime = filemtime($gistFolder.'/'.$m[2]);
 			updateSnippet($gistFolder, $m[3], $m[2], $mtime);
 		}
+		return $m[3];
 	}
 }
 
